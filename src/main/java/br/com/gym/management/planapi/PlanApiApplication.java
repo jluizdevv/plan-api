@@ -13,6 +13,3 @@ public class PlanApiApplication {
 	}
 
 }
-// Comentário para acionar o CI/CD
-// Comentário para acionar o CI/CD
-// Comentário para acionar o CI/CD
