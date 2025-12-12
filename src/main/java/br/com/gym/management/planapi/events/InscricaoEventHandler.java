@@ -4,10 +4,10 @@ import br.com.gym.management.planapi.domain.Inscricao;
 import br.com.gym.management.planapi.domain.Plano;
 import br.com.gym.management.planapi.repository.InscricaoRepository;
 import br.com.gym.management.planapi.repository.PlanoRepository;
+import br.com.gym.management.planapi.service.PlanoService;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDate;
 
 @Service
@@ -15,10 +15,12 @@ public class InscricaoEventHandler {
 
     private final PlanoRepository planoRepository;
     private final InscricaoRepository inscricaoRepository;
+    private final PlanoService planoService;
 
-    public InscricaoEventHandler(PlanoRepository planoRepository, InscricaoRepository inscricaoRepository) {
+    public InscricaoEventHandler(PlanoRepository planoRepository, InscricaoRepository inscricaoRepository, PlanoService planoService) {
         this.planoRepository = planoRepository;
         this.inscricaoRepository = inscricaoRepository;
+        this.planoService = planoService;
     }
 
     @RabbitListener(queues = "inscricao.criar")
@@ -33,15 +35,15 @@ public class InscricaoEventHandler {
             System.err.println("ERRO: Plano não encontrado para ID: " + event.planoId() + ". Inscrição cancelada.");
             return;
         }
-
+        planoService.desativarInscricoesAtivas(event.membroId());
         Inscricao novaInscricao = new Inscricao();
         novaInscricao.setMembroId(event.membroId());
         novaInscricao.setPlano(plano);
         novaInscricao.setDataInicio(LocalDate.now());
-
         LocalDate dataFim = LocalDate.now().plusMonths(plano.getDuracaoEmMeses());
         novaInscricao.setDataFim(dataFim);
         novaInscricao.setAtiva(true);
+
 
         inscricaoRepository.save(novaInscricao);
 

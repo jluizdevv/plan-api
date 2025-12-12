@@ -2,11 +2,13 @@ package br.com.gym.management.planapi.controller;
 
 import br.com.gym.management.planapi.domain.Inscricao;
 import br.com.gym.management.planapi.domain.Plano;
-import br.com.gym.management.planapi.repository.InscricaoRepository;
-import br.com.gym.management.planapi.repository.PlanoRepository;
+import br.com.gym.management.planapi.service.PlanoService; // NOVO IMPORT
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,32 +17,29 @@ import java.util.Optional;
 @RequestMapping("/api/planos")
 public class PlanoController {
 
-    private final PlanoRepository planoRepository;
-    private final InscricaoRepository inscricaoRepository;
+    private final PlanoService planoService;
 
-    public PlanoController(PlanoRepository planoRepository, InscricaoRepository inscricaoRepository) {
-        this.planoRepository = planoRepository;
-        this.inscricaoRepository = inscricaoRepository;
+    public PlanoController(PlanoService planoService) {
+        this.planoService = planoService;
     }
 
     @GetMapping
     public List<Plano> listarPlanos() {
-        return planoRepository.findAll();
+        return planoService.findAll();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Plano> buscarPlanoPorId(@PathVariable Long id) {
-        return planoRepository.findById(id)
+    @GetMapping("/{planoId}")
+    public ResponseEntity<Plano> buscarPlanoPorId(@PathVariable Long planoId) {
+        return planoService.buscarPlanoPorIdComCache(planoId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/inscricoes/membro/{membroId}")
     @Transactional(readOnly = true)
-    public ResponseEntity<Inscricao> buscarInscricaoAtivaPorMembroId(@PathVariable Long membroId) {
-        Optional<Inscricao> inscricao = inscricaoRepository.findByMembroIdAndAtivaTrue(membroId);
+    public ResponseEntity<Optional<Inscricao>> buscarInscricaoAtivaPorMembroId(@PathVariable Long membroId) {
+        Optional<Inscricao> inscricao = planoService.buscarInscricaoAtivaPorMembroId(membroId);
 
-        return inscricao.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(inscricao);
     }
 }
